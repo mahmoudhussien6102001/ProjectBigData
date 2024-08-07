@@ -1,0 +1,217 @@
+patient_Collection
+
+Queries
+
+1//{"BMI": {"$gte": 25, "$lte": 30}}
+
+2//
+{
+    "Sex": "Male",
+    "BMI": {"$gte": 25, "$lte": 30}
+}
+
+sort 
+
+1//"BMI", pymongo.DESCENDING
+
+create index : 
+
+1//[("BMI",pymongo.DESCENDING),("Age_Category",pymongo.ASCENDING)]
+
+Aggregate functhion
+
+1// Get the total count of patients in each age category
+
+{"$group": {"_id": "$Age_Category", "count": {"$sum": 1}}}
+
+2//{"$match": {"Sex": "Male"}}
+
+3//{"$group": {"_id": "$Age_Category"}}
+
+4//List patients with a BMI between 25 and 30
+
+{"$match": {"BMI": {"$gte": 25, "$lte": 30}}}
+
+5//{
+        "$group": {
+            "_id": {"Age_Category": "$Age_Category", "Sex": "$Sex"},
+            "average_bmi": {"$avg": "$BMI"}
+        }
+    },
+    {
+        "$project": {
+            "_id": 0,   
+            "Age_Category": "$_id.Age_Category",
+            "Sex": "$_id.Sex",
+            "average_bmi": 1
+        }
+    }
+
+MapReduce
+
+map_function = """
+function() {
+    emit(this.Sex, parseFloat(this.BMI));
+}
+"""
+
+# Define the reduce function
+reduce_function = """
+function(key, values) {
+    return Array.sum(values) / values.length;
+}
+"""
+
+# Perform MapReduce
+res = db.command({
+    "mapReduce": "Patient",
+    "map": map_function,
+    "reduce": reduce_function,
+    "out": "Output_sum"
+})
+________________________________________________________________________
+
+
+Address COllection 
+
+Query 
+
+{"Country": "United States"}
+
+Aggregate functhion
+
+{"$match": {"Country": "United States"}}
+
+______________________________________________________________________
+
+arthritis collection
+
+Aggregate functhion
+
+Get the total count of patients with arthritis     
+ {"$count": "total"}
+
+1// arthritis_collection.create_index    [("PatientID", pymongo.ASCENDING)]
+
+_________________________________________________________________________
+
+Doctor Collection
+
+
+1//doctor_collection.create_index        [("Name", pymongo.ASCENDING)]
+
+
+___________________________________________________________________________
+
+Health_Data Collection 
+
+Query
+1//
+{
+    "Fruit_Consumption": {"$gt": "20"},
+    "Green_Vegetables_Consumption": {"$gt":"20"}
+}
+
+2//{"Alcohol_Consumption": {"$lte": "2"}}
+
+3//{"Green_Vegetables_Consumption": {"$gte": "5}}
+
+4//{"General_Health": "Good"}
+
+
+Create index:
+
+1//([("Green_Vegetables_Consumption", pymongo.ASCENDING)])
+
+2//[("Alcohol_Consumption", pymongo.ASCENDING)]
+
+3//[("General_Health", pymongo.ASCENDING), ("Exercise", pymongo.ASCENDING)]
+
+ 
+MapReduce
+
+
+map_function = """
+function() {
+    emit(this.Exercise, parseFloat(this.Fruit_Consumption));
+}
+"""
+
+# Define the reduce function
+reduce_function = """
+function(key, values) {
+    return Array.sum(values) / values.length;
+}
+"""
+res = db.command({
+    "mapReduce": "Health_Data",
+    "map": map_function,
+    "reduce": reduce_function,
+    "out": "Output_sum_Health_Data"
+})
+
+___________________________________________________________________
+
+
+diabetes collection
+
+1//diabetes_collection.create_index      [("HasDiabetes", pymongo.ASCENDING)]
+
+
+____________________________________________________________________
+
+
+disease collection
+
+Query 
+
+1//{
+    "Depression": "Yes",
+    "Heart_Disease": "No",
+    "Skin_Cancer": "No",
+    "Other_Cancer": "No"
+}
+
+Create index:
+
+1//([("Depression", pymongo.ASCENDING)])
+
+2//([("Other_Cancer", pymongo.ASCENDING)])
+
+3//([("HealthDataID", pymongo.ASCENDING)])
+
+
+
+Aggregate functhion
+
+1//{ "$match": { "Heart_Disease": "Yes"} },
+    { "$count": "num_patients_with_heart_disease" }
+
+2//{ "$group": { "_id": "$Heart_Disease", "count": { "$sum": 1 } } }
+
+3//{ "$group": { "_id": "$Depression", "average_patients": { "$avg": 1 } } }
+
+4//{
+        "$group": {
+            "_id": null,
+            "total_skin_cancer": { "$sum": { "$cond": [ "$Skin_Cancer", 1, 0 ] } },
+            "total_other_cancer": { "$sum": { "$cond": [ "$Other_Cancer", 1, 0 ] } },
+            "total_depression": { "$sum": { "$cond": [ "$Depression", 1, 0 ] } }
+        }
+    }
+
+5//{
+        "$group": {
+            "_id": "$PatientID",
+            "heart_disease": { "$sum": { "$cond": [ "$Heart_Disease", 1, 0 ] } },
+            "skin_cancer": { "$sum": { "$cond": [ "$Skin_Cancer", 1, 0 ] } },
+            "other_cancer": { "$sum": { "$cond": [ "$Other_Cancer", 1, 0 ] } },
+            "depression": { "$sum": { "$cond": [ "$Depression", 1, 0 ] } }
+        }
+    }
+
+
+
+
+
+
